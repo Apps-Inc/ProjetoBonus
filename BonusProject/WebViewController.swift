@@ -8,8 +8,11 @@
 import UIKit
 import WebKit
 
-protocol AddUrlDelegate {
-    func addUrl(url: UrlInfos) -> Bool
+protocol UrlBookmarkDelegate {
+    func exists(name: String) -> Bool
+    func exists(url: URL) -> Bool
+    func addUrl(url: UrlInfos)
+    func removeUrl(url: URL)
 }
 
 class WebViewController: UIViewController, WKNavigationDelegate {
@@ -17,12 +20,14 @@ class WebViewController: UIViewController, WKNavigationDelegate {
     private var progressView: UIProgressView =  UIProgressView(progressViewStyle: .default)
     var initialUrl: URL?
     
-    var addUrlDelegate: AddUrlDelegate?
+    var urlDelegate: UrlBookmarkDelegate?
+    
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        navigationItem.rightBarButtonItem = UIBarButtonItem(image: UIImage(named: "heart"), style: .plain, target: self, action: #selector(saveUrl))
+        navigationItem.rightBarButtonItem = UIBarButtonItem(image: UIImage(named: "heart"), style: .plain, target: self, action: #selector(toggleUrl))
+        
         
         webView.navigationDelegate = self
         webView.addObserver(self, forKeyPath: #keyPath(WKWebView.estimatedProgress), options: .new, context: nil)
@@ -48,6 +53,7 @@ class WebViewController: UIViewController, WKNavigationDelegate {
         title = webView.title
         
         reloadPage()
+        updateBookmarkButton()
     }
     
     @objc func reloadPage(){
@@ -55,24 +61,39 @@ class WebViewController: UIViewController, WKNavigationDelegate {
         webView.reload()
     }
     
-    @objc func saveUrl(){
+    @objc func toggleUrl(){
         guard let url = webView.url else { return }
+        
+        guard let exists = self.urlDelegate?.exists(url: url) else { return  }
+        
+        if !exists {
+            save(url: url)
+        } else {
+            urlDelegate?.removeUrl(url: url)
+            updateBookmarkButton(exists: false)
+        }
+    }
+    
+    func save(url: URL) {
         let ac = UIAlertController(title: "Save Page", message: "Name", preferredStyle: .alert)
         ac.addTextField()
         
         
         ac.addAction(UIAlertAction(title: "Save", style: .default, handler: { [weak self] _ in
             guard let text = ac.textFields?[0].text else { return }
-            guard let wasSaved = self?.addUrlDelegate?.addUrl(url: UrlInfos(name: text, url: url)) else { return  }
+            let urlInfos = UrlInfos(name: text, url: url)
+            guard let exists = self?.urlDelegate?.exists(name: text) else { return  }
 
-            if !wasSaved {
+            if exists {
                 ac.message = "Name alredy exists"
                 self?.present(ac, animated: true, completion: nil)
+            } else {
+                self?.urlDelegate?.addUrl(url: urlInfos)
+                self?.updateBookmarkButton(exists: true)
             }
         }))
         
         ac.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
-
         present(ac, animated: true, completion: nil)
     }
     
@@ -82,6 +103,22 @@ class WebViewController: UIViewController, WKNavigationDelegate {
             if progressView.progress == 1 {
                 progressView.isHidden = true
             }
+        }
+    }
+    
+    func updateBookmarkButton() {
+        guard let url = webView.url else { return }
+        guard let delegate = self.urlDelegate else { return }
+        
+        updateBookmarkButton(exists: delegate.exists(url: url))
+    }
+    
+    func updateBookmarkButton(exists: Bool) {
+        if exists {
+            navigationItem.rightBarButtonItem = UIBarButtonItem(image: UIImage(named: "heart-full"), style: .plain, target: self, action: #selector(toggleUrl))
+            
+        } else {
+            navigationItem.rightBarButtonItem = UIBarButtonItem(image: UIImage(named: "heart"), style: .plain, target: self, action: #selector(toggleUrl))
         }
     }
     

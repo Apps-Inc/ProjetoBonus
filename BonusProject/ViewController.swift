@@ -25,7 +25,7 @@ class ViewController: UITableViewController {
     
     func openNewPage(url: URL?){
         let newViewController = WebViewController()
-        newViewController.addUrlDelegate = self
+        newViewController.urlDelegate = self
         newViewController.initialUrl = url
         self.navigationController?.pushViewController(newViewController, animated: true)
     }
@@ -42,7 +42,7 @@ class ViewController: UITableViewController {
     }
     
     @objc private func handleLongPress(sender: UILongPressGestureRecognizer) {
-        if sender.state == .ended {
+        if sender.state == .began {
             let touchPoint = sender.location(in: tableView)
             if let indexPath = tableView.indexPathForRow(at: touchPoint) {
                 let ac = UIAlertController(title: "Options", message: "actions", preferredStyle: .alert)
@@ -88,13 +88,23 @@ class ViewController: UITableViewController {
     
 }
 
-extension ViewController: AddUrlDelegate {
-    func addUrl(url: UrlInfos) -> Bool{
-        if self.urlsList.contains(where: {$0.name == url.name}) {
-            return false
-        }
+extension ViewController: UrlBookmarkDelegate {
+    func exists(url: URL) -> Bool {
+        return self.urlsList.contains(where: {$0.url == url})
+    }
+    
+    func removeUrl(url: URL) {
+        guard let idx = self.urlsList.firstIndex(where: { $0.url == url}) else { return }
+        self.urlsList.remove(at: idx)
+        self.tableView.reloadData()
+    }
+    
+    func addUrl(url: UrlInfos) {
         self.urlsList.append(url)
         self.tableView.reloadData()
-        return true
+    }
+    
+    func exists(name: String) -> Bool {
+        return self.urlsList.contains(where: {$0.name == name})
     }
 }
