@@ -9,7 +9,7 @@ import UIKit
 import WebKit
 
 protocol AddUrlDelegate {
-    func addUrl(url: UrlInfos)
+    func addUrl(url: UrlInfos) -> Bool
 }
 
 class WebViewController: UIViewController, WKNavigationDelegate {
@@ -60,14 +60,19 @@ class WebViewController: UIViewController, WKNavigationDelegate {
         let ac = UIAlertController(title: "Save Page", message: "Name", preferredStyle: .alert)
         ac.addTextField()
         
-        ac.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
         
-        ac.addAction(UIAlertAction(title: "Save", style: .default, handler: { [weak self, weak ac] _ in
-            guard let text = ac?.textFields?[0].text else { return }
-            self?.addUrlDelegate?.addUrl(url: UrlInfos(name: text, url: url))
+        ac.addAction(UIAlertAction(title: "Save", style: .default, handler: { [weak self] _ in
+            guard let text = ac.textFields?[0].text else { return }
+            guard let wasSaved = self?.addUrlDelegate?.addUrl(url: UrlInfos(name: text, url: url)) else { return  }
+
+            if !wasSaved {
+                ac.message = "Name alredy exists"
+                self?.present(ac, animated: true, completion: nil)
+            }
         }))
         
-        
+        ac.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+
         present(ac, animated: true, completion: nil)
     }
     

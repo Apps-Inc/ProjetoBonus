@@ -49,13 +49,22 @@ class ViewController: UITableViewController {
                 ac.addAction(UIAlertAction(title: "Update", style: .default, handler: { [weak self] _  in
                     let acu = UIAlertController(title: "Update", message: "Write new Name", preferredStyle: .alert)
                     acu.addTextField()
-                    acu.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
                     acu.addAction(UIAlertAction(title: "Save", style: .default, handler: { _ in
                         guard let text = acu.textFields?[0].text else {return}
-                        self?.urlsList[indexPath.row].name = text
-                        self?.tableView.reloadRows(at: [indexPath], with: .automatic)
-                        return
+                        
+                        if self?.urlsList.contains(where: {$0.name == text}) ?? true {
+                            acu.message = "Name alredy exists"
+                            self?.present(acu, animated: true, completion: nil)
+                            return
+                        } else {
+                            self?.urlsList[indexPath.row].name = text
+                            self?.tableView.reloadRows(at: [indexPath], with: .automatic)
+                            return
+                        }
+                        
                     }))
+                    
+                    acu.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
                     
                     self?.present(acu, animated: true, completion: nil)
                 }))
@@ -73,14 +82,19 @@ class ViewController: UITableViewController {
     }
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-    
         openNewPage(url: urlsList[indexPath.row].url)
     }
+    
+    
 }
 
 extension ViewController: AddUrlDelegate {
-    func addUrl(url: UrlInfos) {
+    func addUrl(url: UrlInfos) -> Bool{
+        if self.urlsList.contains(where: {$0.name == url.name}) {
+            return false
+        }
         self.urlsList.append(url)
         self.tableView.reloadData()
+        return true
     }
 }
