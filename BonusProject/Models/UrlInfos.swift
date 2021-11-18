@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct UrlInfos {
+struct UrlInfos : Codable {
     var name: String
     var url: URL
 }
