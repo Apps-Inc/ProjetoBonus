@@ -31,14 +31,20 @@ class WebViewController: UIViewController, WKNavigationDelegate {
         
         webView.navigationDelegate = self
         webView.addObserver(self, forKeyPath: #keyPath(WKWebView.estimatedProgress), options: .new, context: nil)
+        webView.addObserver(self, forKeyPath: #keyPath(WKWebView.url), options: .new, context: nil)
         view = webView
         
         progressView.sizeToFit()
-        let progressButtom = UIBarButtonItem(customView: progressView)
-        let spacer = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
-        let refresh = UIBarButtonItem(barButtonSystemItem: .refresh, target: self, action: #selector(reloadPage))
         
-        toolbarItems = [progressButtom,spacer, refresh]
+        toolbarItems = [
+            UIBarButtonItem(customView: progressView),
+            
+            UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil),
+            
+            UIBarButtonItem(barButtonSystemItem: .rewind, target: webView, action: #selector(webView.goBack)),
+            UIBarButtonItem(barButtonSystemItem: .fastForward, target: webView, action: #selector(webView.goForward)),
+            UIBarButtonItem(barButtonSystemItem: .refresh, target: self, action: #selector(reloadPage))
+        ]
         navigationController?.isToolbarHidden = false
         
         var url : URL
@@ -51,6 +57,7 @@ class WebViewController: UIViewController, WKNavigationDelegate {
         webView.load(URLRequest(url: url))
         webView.allowsBackForwardNavigationGestures = true
         title = webView.title
+        
         
         reloadPage()
         updateBookmarkButton()
@@ -103,6 +110,9 @@ class WebViewController: UIViewController, WKNavigationDelegate {
             if progressView.progress == 1 {
                 progressView.isHidden = true
             }
+        }
+        else if keyPath == "URL" {
+            updateBookmarkButton()
         }
     }
     
